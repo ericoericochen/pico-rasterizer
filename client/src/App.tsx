@@ -1,12 +1,9 @@
 import { useState, useRef, useEffect } from "react";
 import { mat4, vec3, vec4 } from "gl-matrix";
+import { PerspectiveCamera, type ICamera } from "./core/camera";
 
 const degreesToRadians = (degrees: number) => {
   return (degrees * Math.PI) / 180;
-};
-
-const radiansToDegrees = (radians: number) => {
-  return (radians * 180) / Math.PI;
 };
 
 class Renderer {
@@ -27,7 +24,7 @@ class Renderer {
     this.canvas.height = height;
   }
 
-  render() {
+  render(camera: ICamera) {
     const ctx = this.ctx;
     const canvas = this.canvas;
 
@@ -37,25 +34,7 @@ class Renderer {
     ctx.fillRect(0, 0, canvas.width, canvas.height);
 
     // vertices to draw
-    const aspect = canvas.width / canvas.height;
-    const fov = 45;
-    const near = 0.1;
-
-    const h = 2 * near * Math.tan(degreesToRadians(fov) / 2);
-    const w = aspect * h;
-    const fovx = Math.atan(w / (2 * near));
-    const fovxDegrees = radiansToDegrees(fovx);
-
-    console.log({ aspect, width: canvas.width, height: canvas.height, h, w });
-    console.log({ foxyDegrees: fov, fovxDegrees });
-
-    const projectionMatrix = mat4.perspectiveNO(
-      mat4.create(),
-      degreesToRadians(fov),
-      aspect,
-      0.1,
-      1000,
-    );
+    const projectionMatrix = camera.projectionMatrix;
 
     const modelMatrix = mat4.create();
     mat4.translate(modelMatrix, modelMatrix, [0, 0, -10]);
@@ -63,14 +42,6 @@ class Renderer {
     mat4.rotateX(modelMatrix, modelMatrix, degreesToRadians(45));
 
     console.log(modelMatrix);
-
-    // const triangles = [
-    //   [
-    //     [-1, 1, 1],
-    //     [1, -1, 1],
-    //     [-1, -1, 1],
-    //   ],
-    // ];
 
     const triangles = [
       // Front (z = 1)
@@ -231,7 +202,19 @@ function App() {
     const { width, height } = canvasWrapper.getBoundingClientRect();
     renderer.setSize(width, height);
 
-    renderer.render();
+    const fov = 45;
+    const aspect = width / height;
+    const near = 0.1;
+    const far = 2000;
+
+    const camera = new PerspectiveCamera({
+      fov,
+      aspect,
+      near,
+      far,
+    });
+
+    renderer.render(camera);
 
     canvasWrapper.appendChild(renderer.domElement);
     return () => {
